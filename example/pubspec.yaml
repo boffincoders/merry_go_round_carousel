@@ -1,0 +1,16 @@
+name: merry_go_round_carousel_example
+description: Demo app for merry_go_round_carousel.
+publish_to: none
+version: 1.0.0
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  merry_go_round_carousel:
+    path: ../
+
+flutter:
+  uses-material-design: true

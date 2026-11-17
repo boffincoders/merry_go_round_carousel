@@ -1,0 +1,20 @@
+# pub uses this file instead of .gitignore, so it repeats those rules.
+.dart_tool/
+.packages
+build/
+pubspec.lock
+doc/api/
+.env*
+*.dart.js
+*.info.json
+*.js
+*.js_
+*.js.deps
+*.js.map
+.flutter-plugins
+.flutter-plugins-dependencies
+.idea/
+Claude outputs/
+
+# Demo GIFs stay on GitHub (the README links to them) to keep the package small.
+screenshots/
