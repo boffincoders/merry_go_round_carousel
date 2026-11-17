@@ -173,8 +173,11 @@ class _ServerDemoPageState extends State<ServerDemoPage> {
           itemCount: _items.length,
           itemSize: itemSize,
           tilt: 0.28,
+          semanticLabel: 'Destinations',
           // The carousel gives you an index; the full object is _items[i].
-          onIndexChanged: (i) => setState(() => _selected = _items[i]),
+          // onSelectedItemChanged fires once the wheel stops, so a fast fling
+          // doesn't update the details for every card that flies past.
+          onSelectedItemChanged: (i) => setState(() => _selected = _items[i]),
           itemBuilder: (context, i, depth) => _DestinationCard(
             destination: _items[i],
             highlighted: depth > 0.97,

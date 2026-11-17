@@ -17,7 +17,9 @@ can bring a tapped item to the front, and can turn on its own.
 - Snaps so an item is always exactly at the front (optional)
 - Tap any item to rotate it to the front
 - Auto-rotate that pauses while the user interacts and resumes afterwards
-- `MerryGoRoundController`: `next()`, `previous()`, `animateToIndex()`, `jumpToIndex()`, pause and resume auto-rotate
+- `MerryGoRoundController`: `next()`, `previous()`, `animateToIndex()`, `jumpToIndex()`, pause and resume auto-rotate, `isMoving`
+- `onSelectedItemChanged` for the item the wheel stops on, separate from `onIndexChanged` for every item that passes the front
+- Screen reader support, reduced-motion support and keyboard activation
 - Optional center widget (the "pole"), drawn between the back and front items
 - `.builder` constructor that receives each item's `depth` (0 = back, 1 = front) for highlighting
 - Works on web and desktop too: mouse drag, mouse wheel / trackpad scrolling, arrow keys and hover cursors
@@ -56,7 +58,7 @@ better than a wheel.
 
 ```yaml
 dependencies:
-  merry_go_round_carousel: ^0.1.0
+  merry_go_round_carousel: ^0.2.0
 ```
 
 or straight from GitHub:
@@ -119,9 +121,66 @@ MerryGoRoundCarousel(children: [a, b, c, d, e]);
 | `snapToItem` | `true` | Settle with an item at the front |
 | `friction` | `0.08` | Fraction of fling speed kept after 1 s |
 | `rotateOnTap` | `true` | Tap an item to bring it forward |
-| `onIndexChanged` | – | Front item changed |
-| `onItemTap` | – | Item tapped |
+| `onIndexChanged` | – | Front item changed (also fires for items that only pass the front during a spin) |
+| `onSelectedItemChanged` | – | The wheel came to rest on a different item. Use this for expensive work such as loading details |
+| `onItemTap` | – | Item tapped, or Enter/Space pressed while focused |
+| `onDragStart` / `onDragEnd` | – | The user started / stopped dragging |
 | `center` | – | Widget in the middle of the ring |
+| `addRepaintBoundaries` | `true` | Wrap each item in a `RepaintBoundary` so moving it doesn't repaint its contents |
+| `semanticLabel` | – | What screen readers call the carousel, e.g. "Destinations" |
+| `semanticValueBuilder` | `"3 of 8"` | Position text read by screen readers (override to translate) |
+
+The controller also exposes `currentIndex`, `angle`, `isMoving` and
+`isAutoRotating`. `next()`, `previous()` and `animateToIndex()` return a
+`Future` that completes when the rotation finishes.
+
+## Selection: while spinning vs. at rest
+
+`onIndexChanged` fires every time a different item reaches the front, including
+items that only pass by during a fling. That is right for a lightweight label,
+but too often for a network call. `onSelectedItemChanged` fires only once the
+wheel has come to rest on a different item:
+
+```dart
+MerryGoRoundCarousel.builder(
+  // ...
+  onIndexChanged: (i) => setState(() => title = items[i].name), // cheap, live
+  onSelectedItemChanged: (i) => loadDetails(items[i].id),        // once settled
+);
+```
+
+While `autoRotate` is turning the wheel it is never at rest, so
+`onSelectedItemChanged` waits until rotation pauses (for example after the user
+taps or swipes).
+
+## Accessibility
+
+- Screen readers see the carousel as one adjustable control with your
+  `semanticLabel` and its position ("3 of 8"). Swiping up or down with
+  TalkBack/VoiceOver moves to the next or previous item. Items are read in list
+  order and the front item is marked as selected.
+- Auto-rotation is switched off while a screen reader is running, so the
+  position isn't announced over and over.
+- When the system asks for reduced motion (`MediaQuery.disableAnimations`),
+  auto-rotation is switched off and next/previous/tap move instantly instead of
+  animating.
+- Keyboard: left and right arrows rotate, Enter or Space activates the front
+  item (`onItemTap`).
+
+## Performance
+
+The wheel moves every item on every frame of a spin, so the item builder runs
+for every item on every frame. To keep that cheap:
+
+- Keep the cards' own build methods light, and make anything that doesn't depend
+  on `depth` a `const` widget or build it once outside the builder. With the
+  default constructor (a `children` list) the same widget instances are reused,
+  so Flutter skips rebuilding them.
+- Each item is wrapped in a `RepaintBoundary` (`addRepaintBoundaries`), so
+  moving it doesn't repaint its contents.
+- Do expensive work in `onSelectedItemChanged`, not `onIndexChanged`.
+- Profile with real cards in Flutter DevTools. The wheel is designed for roughly
+  5–15 items on screen at once.
 
 ## Phones, tablets and web
 
@@ -162,7 +221,7 @@ The carousel only deals in indexes, so the selected option is `items[index]`:
 MerryGoRoundCarousel.builder(
   controller: controller,
   itemCount: items.length,
-  onIndexChanged: (i) => setState(() => selected = items[i]),
+  onSelectedItemChanged: (i) => setState(() => selected = items[i]),
   onItemTap: (i) => openDetails(items[i]),
   itemBuilder: (context, i, depth) => MyCard(item: items[i]),
 );

@@ -87,6 +87,7 @@ class _DemoPageState extends State<DemoPage> {
                   itemSize: itemSize,
                   tilt: 0.28,
                   autoRotate: _autoRotate,
+                  semanticLabel: 'Rides',
                   onIndexChanged: (i) => setState(() => _front = i),
                   onItemTap: (i) => ScaffoldMessenger.of(context)
                     ..hideCurrentSnackBar()
