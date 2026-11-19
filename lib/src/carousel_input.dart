@@ -52,17 +52,50 @@ extension _CarouselInput on _MerryGoRoundCarouselState {
     }
   }
 
+  /// The scroll behavior after applying the deprecated `enableScrollWheel`.
+  MerryGoRoundScrollBehavior get _scrollBehavior =>
+      // ignore: deprecated_member_use_from_same_package
+      widget.enableScrollWheel
+          ? widget.scrollBehavior
+          : MerryGoRoundScrollBehavior.never;
+
+  /// How far [event] should turn the wheel, in scroll pixels, or 0 if the
+  /// current [MerryGoRoundCarousel.scrollBehavior] leaves it to the page.
+  double _scrollDistance(PointerScrollEvent event) {
+    var delta = event.scrollDelta;
+    // Desktop embedders other than macOS report Shift + wheel as a vertical
+    // scroll; treat it as horizontal, like Flutter's own scroll views do.
+    if (event.kind == PointerDeviceKind.mouse &&
+        delta.dx == 0 &&
+        HardwareKeyboard.instance.isShiftPressed) {
+      delta = Offset(delta.dy, 0);
+    }
+    final horizontal = delta.dx.abs() > delta.dy.abs();
+    switch (_scrollBehavior) {
+      case MerryGoRoundScrollBehavior.always:
+        break;
+      case MerryGoRoundScrollBehavior.horizontalOnly:
+        if (!horizontal) return 0;
+      case MerryGoRoundScrollBehavior.whenFocused:
+        if (!_focusNode.hasFocus) return 0;
+      case MerryGoRoundScrollBehavior.never:
+        return 0;
+    }
+    return horizontal ? delta.dx : delta.dy;
+  }
+
   void _onPointerSignal(PointerSignalEvent event) {
-    if (!widget.enableScrollWheel || widget.itemCount == 0) return;
-    if (event is! PointerScrollEvent) return;
-    // Claim the event so an enclosing scroll view doesn't also scroll.
-    GestureBinding.instance.pointerSignalResolver.register(event, (e) {
-      final delta = (e as PointerScrollEvent).scrollDelta;
-      final d = delta.dx.abs() > delta.dy.abs() ? delta.dx : delta.dy;
-      if (d == 0) return;
+    if (widget.itemCount == 0 || event is! PointerScrollEvent) return;
+    final d = _scrollDistance(event);
+    // Only claim scrolls we handle; the rest reach an enclosing scroll view.
+    if (d == 0) return;
+    GestureBinding.instance.pointerSignalResolver.register(event, (_) {
+      if (!mounted) return;
       _stopMotion();
       _pauseForInteraction();
-      _anim.value -= d / _effectiveRadius * widget.dragSensitivity;
+      _anim.value -= d /
+          _effectiveRadius *
+          (widget.scrollWheelSensitivity ?? widget.dragSensitivity);
       _scrollEndTimer?.cancel();
       _scrollEndTimer = Timer(const Duration(milliseconds: 150), () {
         if (!mounted) return;
@@ -78,6 +111,8 @@ extension _CarouselInput on _MerryGoRoundCarouselState {
   }
 
   KeyEventResult _onKeyEvent(FocusNode node, KeyEvent event) {
+    // Any key press means the user is on the keyboard now: show the outline.
+    if (event is KeyDownEvent) _setFocusFromPointer(false);
     if (!widget.enableKeyboard || widget.itemCount == 0) {
       return KeyEventResult.ignored;
     }

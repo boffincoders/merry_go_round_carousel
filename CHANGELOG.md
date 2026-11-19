@@ -1,3 +1,18 @@
+## 0.3.0
+
+**New**
+- `scrollBehavior` (`MerryGoRoundScrollBehavior`): choose which mouse-wheel and trackpad scrolls turn the carousel: `always` (default, as before), `horizontalOnly`, `whenFocused` or `never`. Scrolls the carousel doesn't handle now reach an enclosing scroll view, so with `horizontalOnly` a page with a carousel on it scrolls normally under the mouse wheel. Shift + wheel counts as horizontal on every desktop platform.
+- `scrollWheelSensitivity`: tune scroll-wheel speed separately from `dragSensitivity` (which it falls back to).
+- Keyboard focus outline: while the carousel has keyboard focus, the front item is outlined, so keyboard users can see where focus is and which item Enter/Space activates. It is only drawn for keyboard navigation, not after a click or tap. Customise it with `focusDecoration`, or turn it off with `showFocusHighlight: false`.
+
+**Deprecated**
+- `enableScrollWheel`. Use `scrollBehavior: MerryGoRoundScrollBehavior.never` instead of `enableScrollWheel: false`. It still works in 0.3.0 and will be removed in a later release. Setting both is an error.
+
+**Example**
+- The "From server" page uses `horizontalOnly`, so the mouse wheel scrolls its details section.
+- The "From server" page can now be opened from the app bar (it wasn't reachable before).
+- Frame-timing benchmarks: `integration_test/carousel_perf_test.dart` and `test_driver/perf_driver.dart`. See the example's README.
+
 ## 0.2.0
 
 **New**

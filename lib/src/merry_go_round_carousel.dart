@@ -2,7 +2,11 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/gestures.dart'
-    show GestureBinding, PointerScrollEvent, PointerSignalEvent;
+    show
+        GestureBinding,
+        PointerDeviceKind,
+        PointerScrollEvent,
+        PointerSignalEvent;
 import 'package:flutter/physics.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/semantics.dart' show OrdinalSortKey;
@@ -10,6 +14,7 @@ import 'package:flutter/services.dart'
     show
         KeyDownEvent,
         KeyEvent,
+        HardwareKeyboard,
         KeyRepeatEvent,
         LogicalKeyboardKey,
         MouseCursor,

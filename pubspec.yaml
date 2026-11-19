@@ -1,8 +1,12 @@
 name: merry_go_round_carousel
 description: A spinning 3D merry-go-round carousel widget. Swipe with momentum, snap to items, tap to bring forward, auto-rotate, and control it with a controller.
-version: 0.2.0
+version: 0.3.0
 repository: https://github.com/boffincoders/merry_go_round_carousel
 issue_tracker: https://github.com/boffincoders/merry_go_round_carousel/issues
+screenshots:
+  - description: A 3D merry-go-round carousel spinning on a phone, with swipe, tap-to-front and auto-rotate.
+    path: screenshots/demo_mobile.gif
+
 topics:
   - carousel
   - animation

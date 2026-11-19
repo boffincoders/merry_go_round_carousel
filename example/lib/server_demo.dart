@@ -174,6 +174,9 @@ class _ServerDemoPageState extends State<ServerDemoPage> {
           itemSize: itemSize,
           tilt: 0.28,
           semanticLabel: 'Destinations',
+          // The page scrolls vertically, so let the mouse wheel scroll it;
+          // sideways trackpad swipes and Shift + wheel turn the carousel.
+          scrollBehavior: MerryGoRoundScrollBehavior.horizontalOnly,
           // The carousel gives you an index; the full object is _items[i].
           // onSelectedItemChanged fires once the wheel stops, so a fast fling
           // doesn't update the details for every card that flies past.

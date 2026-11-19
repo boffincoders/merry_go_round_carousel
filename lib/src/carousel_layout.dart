@@ -24,6 +24,7 @@ extension _CarouselLayout on _MerryGoRoundCarouselState {
       'itemSize must be positive and finite, got $itemSize',
     );
     final front = _frontIndex;
+    final showFocus = _showFocus;
     final radius = widget.radius ?? _autoRadius(constraints, itemSize);
     _effectiveRadius = math.max(radius, 1.0);
 
@@ -46,6 +47,16 @@ extension _CarouselLayout on _MerryGoRoundCarouselState {
       Widget child = widget.itemBuilder(context, i, depth);
       if (widget.addRepaintBoundaries) {
         child = RepaintBoundary(child: child);
+      }
+      if (showFocus && i == front) {
+        // Inside the 3D turn and depth scale, so the outline moves with
+        // the item.
+        child = DecoratedBox(
+          position: DecorationPosition.foreground,
+          decoration:
+              widget.focusDecoration ?? _defaultFocusDecoration(context),
+          child: child,
+        );
       }
       if (widget.faceOutward) {
         // Turn the item to follow the ring, but keep it facing the viewer
@@ -115,9 +126,8 @@ extension _CarouselLayout on _MerryGoRoundCarouselState {
 
     if (widget.enableDrag) {
       wheel = MouseRegion(
-        cursor: _dragging
-            ? SystemMouseCursors.grabbing
-            : SystemMouseCursors.grab,
+        cursor:
+            _dragging ? SystemMouseCursors.grabbing : SystemMouseCursors.grab,
         child: GestureDetector(
           behavior: HitTestBehavior.translucent,
           onHorizontalDragStart: _onDragStart,
@@ -133,11 +143,14 @@ extension _CarouselLayout on _MerryGoRoundCarouselState {
       focusNode: _focusNode,
       canRequestFocus: widget.enableKeyboard,
       skipTraversal: !widget.enableKeyboard,
+      onFocusChange: _setHasFocus,
       onKeyEvent: _onKeyEvent,
       child: Listener(
         behavior: HitTestBehavior.translucent,
         onPointerDown: (_) {
-          if (widget.enableKeyboard) _focusNode.requestFocus();
+          if (!widget.enableKeyboard) return;
+          _setFocusFromPointer(true);
+          _focusNode.requestFocus();
         },
         onPointerSignal: _onPointerSignal,
         child: wheel,
@@ -164,6 +177,16 @@ extension _CarouselLayout on _MerryGoRoundCarouselState {
       child: wheel,
     );
   }
+}
+
+/// Focus outline used when `focusDecoration` is null.
+Decoration _defaultFocusDecoration(BuildContext context) {
+  final color =
+      DefaultSelectionStyle.of(context).cursorColor ?? const Color(0xFF1E88E5);
+  return BoxDecoration(
+    border: Border.all(color: color, width: 3),
+    borderRadius: const BorderRadius.all(Radius.circular(8)),
+  );
 }
 
 /// An item (or the center widget) with how far forward it sits, used to paint

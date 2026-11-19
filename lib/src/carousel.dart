@@ -22,7 +22,13 @@ class MerryGoRoundCarousel extends StatefulWidget {
     this.autoRotateResumeDelay = const Duration(seconds: 2),
     this.enableDrag = true,
     this.dragSensitivity = 1.0,
+    @Deprecated('Use scrollBehavior instead. '
+        'enableScrollWheel: false is scrollBehavior: '
+        'MerryGoRoundScrollBehavior.never. '
+        'This was deprecated after v0.2.0.')
     this.enableScrollWheel = true,
+    this.scrollBehavior = MerryGoRoundScrollBehavior.always,
+    this.scrollWheelSensitivity,
     this.enableKeyboard = true,
     this.snapToItem = true,
     this.friction = 0.08,
@@ -37,6 +43,8 @@ class MerryGoRoundCarousel extends StatefulWidget {
     this.addRepaintBoundaries = true,
     this.semanticLabel,
     this.semanticValueBuilder = _defaultSemanticValue,
+    this.showFocusHighlight = true,
+    this.focusDecoration,
   })  : itemCount = children.length,
         itemBuilder =
             ((BuildContext _, int index, double __) => children[index]),
@@ -50,6 +58,15 @@ class MerryGoRoundCarousel extends StatefulWidget {
         assert(autoRotateSpeed > -double.infinity &&
             autoRotateSpeed < double.infinity),
         assert(dragSensitivity > 0 && dragSensitivity < double.infinity),
+        assert(
+            scrollWheelSensitivity == null ||
+                (scrollWheelSensitivity > 0 &&
+                    scrollWheelSensitivity < double.infinity),
+            'scrollWheelSensitivity must be positive and finite'),
+        assert(
+            enableScrollWheel ||
+                scrollBehavior == MerryGoRoundScrollBehavior.always,
+            'Set scrollBehavior only; enableScrollWheel is deprecated'),
         assert(friction > 0 && friction < 1);
 
   /// Creates a wheel whose items are built on demand.
@@ -72,7 +89,13 @@ class MerryGoRoundCarousel extends StatefulWidget {
     this.autoRotateResumeDelay = const Duration(seconds: 2),
     this.enableDrag = true,
     this.dragSensitivity = 1.0,
+    @Deprecated('Use scrollBehavior instead. '
+        'enableScrollWheel: false is scrollBehavior: '
+        'MerryGoRoundScrollBehavior.never. '
+        'This was deprecated after v0.2.0.')
     this.enableScrollWheel = true,
+    this.scrollBehavior = MerryGoRoundScrollBehavior.always,
+    this.scrollWheelSensitivity,
     this.enableKeyboard = true,
     this.snapToItem = true,
     this.friction = 0.08,
@@ -87,6 +110,8 @@ class MerryGoRoundCarousel extends StatefulWidget {
     this.addRepaintBoundaries = true,
     this.semanticLabel,
     this.semanticValueBuilder = _defaultSemanticValue,
+    this.showFocusHighlight = true,
+    this.focusDecoration,
   })  : assert(itemCount >= 0),
         assert(initialIndex >= 0),
         assert((radius ?? 1) > 0 && (radius ?? 1) < double.infinity),
@@ -98,6 +123,15 @@ class MerryGoRoundCarousel extends StatefulWidget {
         assert(autoRotateSpeed > -double.infinity &&
             autoRotateSpeed < double.infinity),
         assert(dragSensitivity > 0 && dragSensitivity < double.infinity),
+        assert(
+            scrollWheelSensitivity == null ||
+                (scrollWheelSensitivity > 0 &&
+                    scrollWheelSensitivity < double.infinity),
+            'scrollWheelSensitivity must be positive and finite'),
+        assert(
+            enableScrollWheel ||
+                scrollBehavior == MerryGoRoundScrollBehavior.always,
+            'Set scrollBehavior only; enableScrollWheel is deprecated'),
         assert(friction > 0 && friction < 1);
 
   /// Number of items on the wheel.
@@ -162,9 +196,32 @@ class MerryGoRoundCarousel extends StatefulWidget {
   /// distance.
   final double dragSensitivity;
 
-  /// Whether a mouse wheel or trackpad scroll over the carousel rotates it
-  /// (useful on web and desktop). The carousel snaps once scrolling stops.
+  /// Whether a mouse wheel or trackpad scroll over the carousel rotates it.
+  ///
+  /// `false` is the same as [MerryGoRoundScrollBehavior.never]. Don't set
+  /// both this and [scrollBehavior].
+  @Deprecated('Use scrollBehavior instead. '
+      'enableScrollWheel: false is scrollBehavior: '
+      'MerryGoRoundScrollBehavior.never. '
+      'This was deprecated after v0.2.0.')
   final bool enableScrollWheel;
+
+  /// Which mouse-wheel and trackpad scrolls over the carousel rotate it
+  /// (useful on web and desktop). The carousel snaps once scrolling stops.
+  ///
+  /// Scrolls the carousel doesn't handle go to the enclosing scroll view, if
+  /// any. Inside a vertically scrolling page,
+  /// [MerryGoRoundScrollBehavior.horizontalOnly] lets the mouse wheel keep
+  /// scrolling the page while sideways scrolls (and Shift + wheel) turn the
+  /// carousel.
+  final MerryGoRoundScrollBehavior scrollBehavior;
+
+  /// Multiplier applied to mouse-wheel and trackpad scroll distance.
+  ///
+  /// When null, [dragSensitivity] is used. A mouse wheel moves in large
+  /// steps (about 100 px per notch) while a trackpad sends many small ones,
+  /// so this lets you tune scrolling without changing how dragging feels.
+  final double? scrollWheelSensitivity;
 
   /// Whether the left and right arrow keys rotate the carousel once it has
   /// focus. The carousel takes focus when it is clicked or tapped.
@@ -226,6 +283,23 @@ class MerryGoRoundCarousel extends StatefulWidget {
   /// Builds the position text read by screen readers, such as "3 of 8".
   /// Override it to translate the text.
   final MerryGoRoundSemanticValueBuilder semanticValueBuilder;
+
+  /// Whether to draw [focusDecoration] around the front item while the
+  /// carousel has keyboard focus.
+  ///
+  /// The outline only appears for keyboard use: after tabbing to the
+  /// carousel, or once a key is pressed while it has focus. Clicking or
+  /// tapping it doesn't draw the outline (like the CSS `:focus-visible`
+  /// rule). It marks the item that Enter or Space activates.
+  final bool showFocusHighlight;
+
+  /// Decoration painted over the front item while the carousel shows its
+  /// keyboard focus highlight (see [showFocusHighlight]).
+  ///
+  /// When null, a 3 px rounded border is used, in the ambient
+  /// [DefaultSelectionStyle.cursorColor] (the theme's primary colour inside
+  /// a `MaterialApp`) or blue if there is none.
+  final Decoration? focusDecoration;
 
   @override
   State<MerryGoRoundCarousel> createState() => _MerryGoRoundCarouselState();

@@ -30,3 +30,12 @@ doc/api/
 .flutter-plugins-dependencies
 .idea/
 .idea/
+
+# Example platform folders are generated locally with `flutter create .`
+example/android/
+example/ios/
+example/linux/
+example/macos/
+example/web/
+example/windows/
+example/.metadata

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:merry_go_round_carousel/merry_go_round_carousel.dart';
 
+import 'server_demo.dart';
+
 void main() => runApp(const DemoApp());
 
 class DemoApp extends StatelessWidget {
@@ -66,7 +68,18 @@ class _DemoPageState extends State<DemoPage> {
     final scale = itemSize.width / 110;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Merry-go-round carousel')),
+      appBar: AppBar(
+        title: const Text('Merry-go-round carousel'),
+        actions: [
+          TextButton.icon(
+            icon: const Icon(Icons.cloud_download_outlined),
+            label: const Text('From server'),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const ServerDemoPage()),
+            ),
+          ),
+        ],
+      ),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),

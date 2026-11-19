@@ -442,6 +442,272 @@ void main() {
     handle.dispose();
   });
 
+  group('focus outline', () {
+    /// The decoration drawn over item [i] for keyboard focus, if any.
+    Decoration? outlineOn(int i) {
+      final boxes = find.ancestor(
+        of: find.byKey(ValueKey('item$i')),
+        matching: find.byWidgetPredicate((w) =>
+            w is DecoratedBox && w.position == DecorationPosition.foreground),
+      );
+      final found = boxes.evaluate();
+      if (found.isEmpty) return null;
+      return (found.single.widget as DecoratedBox).decoration;
+    }
+
+    testWidgets('shows on the front item when focused with the keyboard',
+        (tester) async {
+      await tester.pumpWidget(_app(MerryGoRoundCarousel(children: _items(5))));
+      expect(outlineOn(0), isNull);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(outlineOn(0), isA<BoxDecoration>());
+      for (var i = 1; i < 5; i++) {
+        expect(outlineOn(i), isNull);
+      }
+    });
+
+    testWidgets('follows the front item', (tester) async {
+      await tester.pumpWidget(_app(MerryGoRoundCarousel(children: _items(5))));
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await tester.pumpAndSettle();
+      expect(outlineOn(0), isNull);
+      expect(outlineOn(1), isNotNull);
+    });
+
+    testWidgets('is not drawn when focus comes from a tap', (tester) async {
+      await tester.pumpWidget(_app(MerryGoRoundCarousel(children: _items(5))));
+      await tester.tap(find.byKey(const ValueKey('item0')),
+          warnIfMissed: false);
+      await tester.pumpAndSettle();
+      expect(outlineOn(0), isNull);
+
+      // Pressing a key afterwards switches to keyboard mode and shows it.
+      await tester.sendKeyEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.pump();
+      expect(outlineOn(0), isNotNull);
+    });
+
+    testWidgets('is not drawn after a mouse click on desktop', (tester) async {
+      await tester.pumpWidget(_app(MerryGoRoundCarousel(children: _items(5))));
+      await tester.tap(find.byKey(const ValueKey('item0')),
+          kind: PointerDeviceKind.mouse, warnIfMissed: false);
+      await tester.pumpAndSettle();
+      expect(outlineOn(0), isNull);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await tester.pumpAndSettle();
+      expect(outlineOn(1), isNotNull);
+
+      // Clicking again hides it until the next key press.
+      await tester.tap(find.byKey(const ValueKey('item1')),
+          kind: PointerDeviceKind.mouse, warnIfMissed: false);
+      await tester.pumpAndSettle();
+      expect(outlineOn(1), isNull);
+    }, variant: TargetPlatformVariant.desktop());
+
+    testWidgets('goes away when focus moves elsewhere', (tester) async {
+      final other = FocusNode();
+      addTearDown(other.dispose);
+      await tester.pumpWidget(_app(Column(children: [
+        MerryGoRoundCarousel(children: _items(5)),
+        Focus(focusNode: other, child: const SizedBox(height: 10)),
+      ])));
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(outlineOn(0), isNotNull);
+
+      // requestFocus takes effect in a microtask, after the next frame.
+      other.requestFocus();
+      await tester.pumpAndSettle();
+      expect(outlineOn(0), isNull);
+    });
+
+    testWidgets('uses focusDecoration and can be turned off', (tester) async {
+      const custom = BoxDecoration(color: Color(0x33FF0000));
+      await tester.pumpWidget(_app(MerryGoRoundCarousel(
+        focusDecoration: custom,
+        children: _items(5),
+      )));
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(outlineOn(0), same(custom));
+
+      await tester.pumpWidget(_app(MerryGoRoundCarousel(
+        showFocusHighlight: false,
+        children: _items(5),
+      )));
+      expect(outlineOn(0), isNull);
+    });
+  });
+
+  group('scroll behavior', () {
+    /// A tall page with the carousel near the top, inside a vertical list.
+    Widget page(ScrollController scroll, MerryGoRoundController controller,
+            MerryGoRoundScrollBehavior behavior) =>
+        MaterialApp(
+          home: Scaffold(
+            body: ListView(controller: scroll, children: [
+              SizedBox(
+                width: 400,
+                child: MerryGoRoundCarousel(
+                  controller: controller,
+                  scrollBehavior: behavior,
+                  children: _items(6),
+                ),
+              ),
+              const SizedBox(height: 2000),
+            ]),
+          ),
+        );
+
+    Future<void> scrollOverCarousel(WidgetTester tester, Offset delta) async {
+      final center = tester.getCenter(find.byKey(const ValueKey('item0')));
+      final pointer = TestPointer(1, PointerDeviceKind.mouse);
+      await tester.sendEventToBinding(pointer.hover(center));
+      await tester.sendEventToBinding(pointer.scroll(delta));
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('always: a vertical wheel turns the carousel, not the page',
+        (tester) async {
+      final scroll = ScrollController();
+      addTearDown(scroll.dispose);
+      final controller = MerryGoRoundController();
+      await tester.pumpWidget(
+          page(scroll, controller, MerryGoRoundScrollBehavior.always));
+      await scrollOverCarousel(tester, const Offset(0, 300));
+      expect(controller.currentIndex, isNot(0));
+      expect(scroll.offset, 0);
+    });
+
+    testWidgets('horizontalOnly: vertical scrolls the page', (tester) async {
+      final scroll = ScrollController();
+      addTearDown(scroll.dispose);
+      final controller = MerryGoRoundController();
+      await tester.pumpWidget(
+          page(scroll, controller, MerryGoRoundScrollBehavior.horizontalOnly));
+
+      await scrollOverCarousel(tester, const Offset(0, 100));
+      expect(scroll.offset, 100);
+      expect(controller.currentIndex, 0);
+
+      scroll.jumpTo(0);
+      await tester.pump();
+      await scrollOverCarousel(tester, const Offset(300, 0));
+      expect(controller.currentIndex, isNot(0));
+      expect(scroll.offset, 0);
+    });
+
+    testWidgets('horizontalOnly: Shift + wheel turns the carousel',
+        (tester) async {
+      final scroll = ScrollController();
+      addTearDown(scroll.dispose);
+      final controller = MerryGoRoundController();
+      await tester.pumpWidget(
+          page(scroll, controller, MerryGoRoundScrollBehavior.horizontalOnly));
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+      await scrollOverCarousel(tester, const Offset(0, 300));
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+      expect(controller.currentIndex, isNot(0));
+      expect(scroll.offset, 0);
+    });
+
+    testWidgets('whenFocused: only after the carousel takes focus',
+        (tester) async {
+      final scroll = ScrollController();
+      addTearDown(scroll.dispose);
+      final controller = MerryGoRoundController();
+      await tester.pumpWidget(
+          page(scroll, controller, MerryGoRoundScrollBehavior.whenFocused));
+
+      await scrollOverCarousel(tester, const Offset(0, 100));
+      expect(controller.currentIndex, 0);
+      expect(scroll.offset, 100);
+
+      scroll.jumpTo(0);
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('item0')),
+          warnIfMissed: false);
+      await tester.pumpAndSettle();
+      await scrollOverCarousel(tester, const Offset(0, 300));
+      expect(controller.currentIndex, isNot(0));
+      expect(scroll.offset, 0);
+    });
+
+    testWidgets('never: the page always scrolls', (tester) async {
+      final scroll = ScrollController();
+      addTearDown(scroll.dispose);
+      final controller = MerryGoRoundController();
+      await tester.pumpWidget(
+          page(scroll, controller, MerryGoRoundScrollBehavior.never));
+      await scrollOverCarousel(tester, const Offset(0, 100));
+      expect(controller.currentIndex, 0);
+      expect(scroll.offset, 100);
+    });
+
+    testWidgets('deprecated enableScrollWheel: false still turns it off',
+        (tester) async {
+      final controller = MerryGoRoundController();
+      await tester.pumpWidget(_app(MerryGoRoundCarousel(
+        controller: controller,
+        // ignore: deprecated_member_use_from_same_package
+        enableScrollWheel: false,
+        children: _items(6),
+      )));
+      await scrollOverCarousel(tester, const Offset(0, 300));
+      expect(controller.currentIndex, 0);
+    });
+
+    testWidgets('scrollWheelSensitivity scales wheel turns only',
+        (tester) async {
+      final slow = MerryGoRoundController();
+      await tester.pumpWidget(_app(MerryGoRoundCarousel(
+        controller: slow,
+        snapToItem: false,
+        scrollWheelSensitivity: 0.5,
+        children: _items(6),
+      )));
+      await scrollOverCarousel(tester, const Offset(0, 40));
+      final slowAngle = slow.angle;
+
+      final normal = MerryGoRoundController();
+      await tester.pumpWidget(_app(MerryGoRoundCarousel(
+        key: const ValueKey('normal'),
+        controller: normal,
+        snapToItem: false,
+        children: _items(6),
+      )));
+      await scrollOverCarousel(tester, const Offset(0, 40));
+      expect(slowAngle, closeTo(normal.angle / 2, 1e-9));
+    });
+  });
+
+  testWidgets('each frame builds every item once', (tester) async {
+    // Benchmark baseline: the per-frame cost is n itemBuilder calls, so at
+    // 60 fps the wheel makes n × 60 calls a second while it moves.
+    const n = 8;
+    var calls = 0;
+    await tester.pumpWidget(_app(MerryGoRoundCarousel.builder(
+      itemCount: n,
+      autoRotate: true,
+      itemBuilder: (context, index, depth) {
+        calls++;
+        return const SizedBox();
+      },
+    )));
+    await tester.pump(const Duration(milliseconds: 16));
+    calls = 0;
+    for (var frame = 0; frame < 10; frame++) {
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    expect(calls, n * 10);
+  });
+
   test('constructors validate their arguments', () {
     expect(() => MerryGoRoundCarousel(dragSensitivity: 0, children: const []),
         throwsAssertionError);
@@ -457,5 +723,18 @@ void main() {
       ),
       throwsAssertionError,
     );
+    expect(
+      () => MerryGoRoundCarousel(
+        // ignore: deprecated_member_use_from_same_package
+        enableScrollWheel: false,
+        scrollBehavior: MerryGoRoundScrollBehavior.horizontalOnly,
+        children: const [],
+      ),
+      throwsAssertionError,
+    );
+    expect(
+        () =>
+            MerryGoRoundCarousel(scrollWheelSensitivity: 0, children: const []),
+        throwsAssertionError);
   });
 }

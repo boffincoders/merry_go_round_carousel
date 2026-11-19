@@ -19,10 +19,12 @@ can bring a tapped item to the front, and can turn on its own.
 - Auto-rotate that pauses while the user interacts and resumes afterwards
 - `MerryGoRoundController`: `next()`, `previous()`, `animateToIndex()`, `jumpToIndex()`, pause and resume auto-rotate, `isMoving`
 - `onSelectedItemChanged` for the item the wheel stops on, separate from `onIndexChanged` for every item that passes the front
-- Screen reader support, reduced-motion support and keyboard activation
+- Screen reader support, reduced-motion support, keyboard activation and a
+  visible focus outline for keyboard users
 - Optional center widget (the "pole"), drawn between the back and front items
 - `.builder` constructor that receives each item's `depth` (0 = back, 1 = front) for highlighting
 - Works on web and desktop too: mouse drag, mouse wheel / trackpad scrolling, arrow keys and hover cursors
+- Plays well inside scrolling pages: choose which wheel scrolls turn the carousel (`scrollBehavior`)
 - Ring sizes itself from the number of items, so it doesn't stretch across wide tablet and desktop screens
 
 ## Use cases
@@ -58,7 +60,7 @@ better than a wheel.
 
 ```yaml
 dependencies:
-  merry_go_round_carousel: ^0.2.0
+  merry_go_round_carousel: ^0.3.0
 ```
 
 or straight from GitHub:
@@ -115,8 +117,10 @@ MerryGoRoundCarousel(children: [a, b, c, d, e]);
 | `autoRotateSpeed` | `0.35` | Radians per second (negative reverses) |
 | `autoRotateResumeDelay` | `2s` | Pause after the user lets go |
 | `enableDrag` | `true` | Allow swiping |
-| `dragSensitivity` | `1.0` | Multiplier for drag, fling and scroll wheel |
-| `enableScrollWheel` | `true` | Mouse wheel / trackpad scroll rotates the carousel |
+| `dragSensitivity` | `1.0` | Multiplier for drag, fling and (unless `scrollWheelSensitivity` is set) scroll wheel |
+| `scrollBehavior` | `always` | Which mouse-wheel / trackpad scrolls rotate the carousel: `always`, `horizontalOnly`, `whenFocused` or `never`. See [Inside a scrolling page](#inside-a-scrolling-page) |
+| `scrollWheelSensitivity` | `dragSensitivity` | Multiplier for scroll-wheel distance only |
+| `enableScrollWheel` | `true` | **Deprecated**: use `scrollBehavior: MerryGoRoundScrollBehavior.never` instead of `false` |
 | `enableKeyboard` | `true` | Left and right arrow keys rotate it once it has focus |
 | `snapToItem` | `true` | Settle with an item at the front |
 | `friction` | `0.08` | Fraction of fling speed kept after 1 s |
@@ -129,6 +133,8 @@ MerryGoRoundCarousel(children: [a, b, c, d, e]);
 | `addRepaintBoundaries` | `true` | Wrap each item in a `RepaintBoundary` so moving it doesn't repaint its contents |
 | `semanticLabel` | – | What screen readers call the carousel, e.g. "Destinations" |
 | `semanticValueBuilder` | `"3 of 8"` | Position text read by screen readers (override to translate) |
+| `showFocusHighlight` | `true` | Outline the front item while the carousel has keyboard focus |
+| `focusDecoration` | 3 px rounded border | Decoration for that outline. The default colour is `DefaultSelectionStyle.cursorColor` (the theme's primary colour in a `MaterialApp`) |
 
 The controller also exposes `currentIndex`, `angle`, `isMoving` and
 `isAutoRotating`. `next()`, `previous()` and `animateToIndex()` return a
@@ -166,6 +172,10 @@ taps or swipes).
   animating.
 - Keyboard: left and right arrows rotate, Enter or Space activates the front
   item (`onItemTap`).
+- While the carousel has keyboard focus, the front item gets an outline
+  (`focusDecoration`), so keyboard users can see where focus is and which item
+  Enter will activate. It only appears for keyboard navigation, not after a
+  click or tap. Turn it off with `showFocusHighlight: false`.
 
 ## Performance
 
@@ -181,6 +191,10 @@ for every item on every frame. To keep that cheap:
 - Do expensive work in `onSelectedItemChanged`, not `onIndexChanged`.
 - Profile with real cards in Flutter DevTools. The wheel is designed for roughly
   5–15 items on screen at once.
+
+The example app includes a frame-timing benchmark
+(`example/integration_test/carousel_perf_test.dart`); see the example's README
+for how to run it on your own devices.
 
 ## Phones, tablets and web
 
@@ -203,6 +217,29 @@ MerryGoRoundCarousel.builder(
 ```
 
 Use `itemSpacing` (or a fixed `radius`) to make the ring wider or tighter.
+
+### Inside a scrolling page
+
+By default any mouse-wheel or trackpad scroll over the carousel turns it, which
+also means the page can't be scrolled while the pointer is over it. Inside a
+vertically scrolling page, use `horizontalOnly`: the wheel scrolls the page as
+usual, and sideways trackpad swipes or Shift + wheel turn the carousel.
+
+```dart
+MerryGoRoundCarousel.builder(
+  scrollBehavior: MerryGoRoundScrollBehavior.horizontalOnly,
+  // ...
+);
+```
+
+| `scrollBehavior` | Turns the carousel | Goes to the page |
+|---|---|---|
+| `always` (default) | every scroll | nothing |
+| `horizontalOnly` | horizontal scrolls, Shift + wheel | vertical scrolls |
+| `whenFocused` | every scroll, once the carousel is clicked, tapped or tabbed to | every scroll until then |
+| `never` | nothing | every scroll |
+
+Dragging with a mouse or finger works the same in every mode.
 
 ## Example
 

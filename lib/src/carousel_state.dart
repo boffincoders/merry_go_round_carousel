@@ -28,6 +28,27 @@ class _MerryGoRoundCarouselState extends State<MerryGoRoundCarousel>
   /// A screen reader or similar service is in use.
   bool _accessibleNavigation = false;
 
+  /// The carousel has keyboard focus.
+  bool _hasFocus = false;
+
+  /// The user is navigating with a keyboard rather than touch or a mouse,
+  /// so focus should be drawn.
+  bool _keyboardMode = false;
+
+  /// Focus came from a click or tap and no key has been pressed since.
+  ///
+  /// Mouse clicks don't switch [FocusManager.highlightMode] away from
+  /// traditional on desktop and web, so this keeps a click from drawing the
+  /// outline (like the CSS `:focus-visible` rule).
+  bool _focusFromPointer = false;
+
+  /// Whether the front item gets the focus outline right now.
+  bool get _showFocus =>
+      widget.showFocusHighlight &&
+      _hasFocus &&
+      _keyboardMode &&
+      !_focusFromPointer;
+
   double get _step =>
       widget.itemCount == 0 ? _twoPi : _twoPi / widget.itemCount;
   double get _angle => _anim.value;
@@ -67,6 +88,9 @@ class _MerryGoRoundCarouselState extends State<MerryGoRoundCarousel>
     widget.controller?._attach(this);
     _lastIndex = _frontIndex;
     _settledIndex = _lastIndex;
+    _keyboardMode =
+        FocusManager.instance.highlightMode == FocusHighlightMode.traditional;
+    FocusManager.instance.addHighlightModeListener(_onHighlightModeChanged);
   }
 
   @override
@@ -114,6 +138,7 @@ class _MerryGoRoundCarouselState extends State<MerryGoRoundCarousel>
   void dispose() {
     _resumeTimer?.cancel();
     _scrollEndTimer?.cancel();
+    FocusManager.instance.removeHighlightModeListener(_onHighlightModeChanged);
     _focusNode.dispose();
     _autoTicker?.dispose();
     widget.controller?._detach(this);
@@ -248,6 +273,30 @@ class _MerryGoRoundCarouselState extends State<MerryGoRoundCarousel>
     _stopMotion();
     _anim.value = -(index % widget.itemCount) * _step;
     _maybeSettled();
+  }
+
+  void _onHighlightModeChanged(FocusHighlightMode mode) {
+    final keyboard = mode == FocusHighlightMode.traditional;
+    if (keyboard == _keyboardMode) return;
+    // Only rebuild when the outline could actually change.
+    if (_hasFocus) {
+      setState(() => _keyboardMode = keyboard);
+    } else {
+      _keyboardMode = keyboard;
+    }
+  }
+
+  void _setHasFocus(bool focused) {
+    if (_hasFocus == focused) return;
+    setState(() {
+      _hasFocus = focused;
+      if (!focused) _focusFromPointer = false;
+    });
+  }
+
+  void _setFocusFromPointer(bool value) {
+    if (_focusFromPointer == value) return;
+    setState(() => _focusFromPointer = value);
   }
 
   /// Updates [_dragging] and rebuilds (for the grab / grabbing cursor).
