@@ -233,6 +233,9 @@ class _MerryGoRoundCarouselState extends State<MerryGoRoundCarousel>
   Future<void> _animateTo(double target, Duration duration, Curve curve) {
     // The user's finger wins over programmatic rotation.
     if (_dragging) return Future<void>.value();
+    // A scroll that just ended would snap the wheel when its timer fires and
+    // replace this animation; this one decides where the wheel goes now.
+    _scrollEndTimer?.cancel();
     if (duration == Duration.zero || _reduceMotion) {
       _stopMotion();
       _anim.value = target;

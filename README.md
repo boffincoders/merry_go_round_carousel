@@ -60,7 +60,7 @@ better than a wheel.
 
 ```yaml
 dependencies:
-  merry_go_round_carousel: ^0.3.0
+  merry_go_round_carousel: ^0.4.0
 ```
 
 or straight from GitHub:

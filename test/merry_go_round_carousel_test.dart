@@ -602,6 +602,28 @@ void main() {
       expect(scroll.offset, 0);
     });
 
+    testWidgets('next() right after a scroll is not undone by the scroll snap',
+        (tester) async {
+      final scroll = ScrollController();
+      addTearDown(scroll.dispose);
+      final controller = MerryGoRoundController();
+      await tester.pumpWidget(
+          page(scroll, controller, MerryGoRoundScrollBehavior.always));
+
+      // A small scroll that snaps back to item 0 when left alone.
+      final center = tester.getCenter(find.byKey(const ValueKey('item0')));
+      final pointer = TestPointer(1, PointerDeviceKind.mouse);
+      await tester.sendEventToBinding(pointer.hover(center));
+      await tester.sendEventToBinding(pointer.scroll(const Offset(0, 5)));
+      await tester.pump();
+
+      // Within the 150 ms scroll-end window.
+      controller.next();
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.pumpAndSettle();
+      expect(controller.currentIndex, 1);
+    });
+
     testWidgets('horizontalOnly: Shift + wheel turns the carousel',
         (tester) async {
       final scroll = ScrollController();

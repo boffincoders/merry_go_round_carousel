@@ -1,3 +1,8 @@
+## 0.4.0
+
+**Fixes**
+- A `next()`, `previous()`, `animateToIndex()`, arrow-key step or tap-to-front started within 150 ms of a mouse-wheel or trackpad scroll was undone: when the scroll finished, the wheel snapped back to the nearest item and replaced the new animation. Navigation started after a scroll now always wins.
+
 ## 0.3.0
 
 **New**
