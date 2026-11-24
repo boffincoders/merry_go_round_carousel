@@ -1,0 +1,62 @@
+# Builds the example app for the web and publishes it to GitHub Pages as the
+# live demo: https://boffincoders.github.io/merry_go_round_carousel/
+#
+# One-time setup: repo Settings → Pages → Source: "GitHub Actions".
+
+name: Live demo
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'lib/**'
+      - 'example/lib/**'
+      - 'example/pubspec.yaml'
+      - '.github/workflows/demo.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Build the example for the web
+        working-directory: example
+        run: |
+          # The platform folders aren't committed; generate the web one.
+          flutter create --platforms=web .
+          TITLE="Merry-go-round carousel – live demo"
+          DESC="A 3D rotating carousel widget for Flutter. Drag, scroll, use the arrow keys or tap a card."
+          sed -i "s|<title>.*</title>|<title>$TITLE</title>|" web/index.html
+          sed -i "s|content=\"A new Flutter project.\"|content=\"$DESC\"|" web/index.html
+          sed -i "s|\"A new Flutter project.\"|\"$DESC\"|" web/manifest.json
+          flutter build web --release --base-href /${{ github.event.repository.name }}/
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: example/build/web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

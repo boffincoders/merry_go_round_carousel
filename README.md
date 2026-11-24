@@ -1,14 +1,40 @@
 # merry_go_round_carousel
 
+[![pub version](https://img.shields.io/pub/v/merry_go_round_carousel.svg)](https://pub.dev/packages/merry_go_round_carousel)
+[![pub likes](https://img.shields.io/pub/likes/merry_go_round_carousel)](https://pub.dev/packages/merry_go_round_carousel/score)
+[![pub points](https://img.shields.io/pub/points/merry_go_round_carousel)](https://pub.dev/packages/merry_go_round_carousel/score)
 [![CI](https://github.com/boffincoders/merry_go_round_carousel/actions/workflows/ci.yml/badge.svg)](https://github.com/boffincoders/merry_go_round_carousel/actions/workflows/ci.yml)
+[![Live demo](https://img.shields.io/badge/demo-try%20it%20live-6750A4)](https://boffincoders.github.io/merry_go_round_carousel/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 A spinning 3D **merry-go-round** carousel for Flutter. Items sit on a tilted ring
 that the user can spin with a swipe. The wheel keeps its momentum, snaps to the nearest item,
 can bring a tapped item to the front, and can turn on its own.
 
+**[▶ Try it live in your browser](https://boffincoders.github.io/merry_go_round_carousel/)**: drag, scroll, use the arrow keys or tap a card.
+
 | Web / desktop | Mobile |
 |:---:|:---:|
 | <img src="https://raw.githubusercontent.com/boffincoders/merry_go_round_carousel/main/screenshots/demo_web.gif" alt="Carousel on web" width="480"> | <img src="https://raw.githubusercontent.com/boffincoders/merry_go_round_carousel/main/screenshots/demo_mobile.gif" alt="Carousel on mobile" width="260"> |
+
+## Quick start
+
+```yaml
+dependencies:
+  merry_go_round_carousel: ^0.4.1
+```
+
+```dart
+import 'package:merry_go_round_carousel/merry_go_round_carousel.dart';
+
+MerryGoRoundCarousel(
+  autoRotate: true,
+  children: [for (final c in Colors.primaries.take(8)) ColoredBox(color: c)],
+);
+```
+
+That's a working spinning ring. Read on for the builder, controller and
+everything else you can tune.
 
 ## Features
 
@@ -56,11 +82,17 @@ should feel playful. Some places it fits:
 need to scan them quickly, a scrolling list, grid or `PageView` will serve them
 better than a wheel.
 
+**Compared with a flat slider such as `carousel_slider`:** a slider shows one
+page at a time and moves in a straight line. This carousel shows every item at
+once around a 3D ring, so it suits a small set of options where seeing them all
+and picking one should feel playful. It has no dependencies and supports
+screen readers, the keyboard and the mouse wheel.
+
 ## Install
 
 ```yaml
 dependencies:
-  merry_go_round_carousel: ^0.4.0
+  merry_go_round_carousel: ^0.4.1
 ```
 
 or straight from GitHub:
@@ -274,6 +306,12 @@ cd example
 flutter create .   # generates the platform folders
 flutter run
 ```
+
+## Support the package
+
+If this carousel is useful to you, please [give it a like on pub.dev](https://pub.dev/packages/merry_go_round_carousel) and
+a ⭐ on [GitHub](https://github.com/boffincoders/merry_go_round_carousel). It helps other developers find it. Bug reports and
+feature ideas are welcome in the [issue tracker](https://github.com/boffincoders/merry_go_round_carousel/issues).
 
 ## License
 

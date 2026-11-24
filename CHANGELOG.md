@@ -1,3 +1,12 @@
+## 0.4.1
+
+**Docs**
+- Live demo: the example app runs in the browser at https://boffincoders.github.io/merry_go_round_carousel/ (also the package homepage).
+- README: pub badges, a quick-start snippet, a comparison with flat sliders and a "support the package" section.
+- Clearer package description and topics so the package is easier to find on pub.dev.
+
+No code changes.
+
 ## 0.4.0
 
 **Fixes**
